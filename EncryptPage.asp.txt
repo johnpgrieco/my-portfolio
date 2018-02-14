@@ -1,0 +1,72 @@
+<% 
+'*******************************************************************************
+'***																		 ***
+'***				MODIFICATION LOG										 ***
+'***				================										 ***
+'*** Date		 Author		Description										 ***
+'*** ----		 ------		-----------										 ***
+'*** MM-DD-YY    ABC		XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX			 ***
+'*******************************************************************************
+
+
+'*******************************************************************************
+'	Encrypt
+'	=============
+'	This function encrypts sensitive data to be sent over a network, 
+'   for example passwords.   
+'
+'	Parameters
+'	----------
+'	sValue = the value to encrypt	
+'
+'	Returns
+'	----------
+'	the encrypted string. 
+'*******************************************************************************
+Function Encrypt(sValue)
+
+    Dim sLen, i, sTemp, sFinal
+    sFinal = ""
+    sLen = Len(sValue)
+
+    For i = 1 To sLen
+        sTemp = Mid(sValue, i, 1)
+        If sFinal = "" Then
+            sFinal = (Asc(sTemp) * 3) - 5
+        Else
+            sFinal = sFinal & "," & (Asc(sTemp) * 3) - 5
+        End If
+    Next
+    Encrypt = sFinal
+End Function
+   
+'*******************************************************************************
+'	Decrypt
+'	=============
+'	This function decrypts previously-encrypted data.    
+'
+'	Parameters
+'	----------
+'	sValue = the value to encrypt	
+'
+'	Returns
+'	----------
+'	the decrypted string. 
+'*******************************************************************************
+Function Decrypt(sValue)
+
+	Dim sLen, i, sTemp, sFinal, sArray
+
+	sArray = Split(sValue, ",")
+	sFinal = ""
+
+	For i = 0 To UBound(sArray)
+	    If i = 0 Then
+	       sFinal = Chr((sArray(i) + 5) / 3)
+	    Else
+	        sFinal = sFinal + Chr((sArray(i) + 5) / 3)
+	    End If
+	Next
+	Decrypt = sFinal
+End Function   
+%>
