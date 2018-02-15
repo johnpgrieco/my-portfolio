@@ -1,0 +1,204 @@
+<!--
+/******************************************************************************/
+/* Title......: UsefulJS		                                      */
+/* Module.....: UsefulJS.js                                                   */
+/* Description: Some useful Javascript functions. 			      */
+/*============================================================================*/
+/* Class: UsefulJS.js                                                         */
+/* Revision History:                                                          */
+/* Date       Programmer Rel Description        	                      */
+/* __________ __________ ___ _________________________________________________*/
+/* XX.XX.XXXX J. Grieco  1.0 Initial Creation                  		      */
+/******************************************************************************/
+
+var returnConst = true;
+var availableList = "";
+
+/******************************************************************************/
+/* Function Name: setSize(dropdown)                                           */
+/* Description  : sets the size of the dropdown (number of elements)          */
+/* Called by	: various                                                     */        
+/* Parameters   : dropdown - the subject dropdown box                         */
+/* Return Value : none                                                        */  
+/******************************************************************************/
+function setSize(dropdown)
+{
+    dropdown.size = getSize(dropdown);
+}
+
+/******************************************************************************/
+/* Function Name: selectNone(dropdown)                                        */
+/* Description  : clears any selected value from the dropdown                 */
+/* Called by	: various                                                     */        
+/* Parameters   : dropdown - the subject dropdown box                         */
+/* Return Value : none                                                        */  
+/******************************************************************************/
+function selectNone(dropdown)
+{
+    dropdown.selectedIndex = -1;
+    addIndex = -1;
+    selIndex = -1;
+}
+
+/******************************************************************************/
+/* Function Name: getSize(dropdown)                                           */
+/* Description  : get the number of elements in the dropdown                  */
+/* Called by	: various                                                     */
+/* Parameters   : dropdown - the subject dropdown box                         */
+/* Return Value : the size of the dropdown list                               */
+/******************************************************************************/
+function getSize(dropdown)
+{
+    var len = dropdown.childNodes.length;
+    var nsLen = 0;
+
+    //nodeType returns 1 for elements
+    for (i=0; i < len; i++)
+    {
+        if (dropdown.childNodes.item(i).nodeType==1)
+            nsLen++;
+    }
+
+    if (nsLen < 2)
+        return 2;
+    else
+        return nsLen;
+}
+
+/******************************************************************************/
+/* Function Name: dropChange(dropdown)                                        */
+/* Description  : returns the index of the option value selected              */
+/* Called by	: various                                                     */        
+/* Parameters   : dropdown - the dropdown box in question                     */
+/* Return Value : the selected index value                                    */  
+/******************************************************************************/
+function dropChange(dropdown)
+{
+    return dropdown.selectedIndex;
+}
+
+
+/******************************************************************************/
+/* Function Name: createListObjects(dropdown)                                 */
+/* Description  : creates a list of objects from a dropdown                   */
+/* Called by	: various                                                     */
+/* Parameters   : dropdown - the subject dropdown box                         */
+/* Return Value : none                                                        */  
+/******************************************************************************/
+function createListObjects(dropdown)
+{
+    availableList = document.getElementById(dropdown);
+}
+
+/******************************************************************************/
+/* Function Name: delAttribute()                                              */
+/* Description  : deletes an item from a combobox.                            */
+/*                createListObjects must be called first.                     */
+/* Called by	: various                                                     */        
+/* Parameters   : cboText - the text of the list item to remove               */
+/* Return Value : none                                                        */  
+/******************************************************************************/
+function delAttribute(cboText)
+{
+    var count;
+
+    for (count = 0 ; count < availableList.options.length ; count++)
+    {
+        if (availableList.options[count].value == cboText)
+        {
+            availableList.remove (count);
+        }
+    }
+
+   //housekeeping.
+   selectNone(availableList);
+   setSize(availableList);
+}
+
+/******************************************************************************/
+/* Function Name: addAttribute()                                              */
+/* Description  : adds an item to a combobox                                  */
+/*                createListObjects must be called first.                     */
+/* Called by	: various                                                     */
+/* Parameters   : optValue - the option value                                 */
+/*                optText - the option text                                   */
+/* Return Value : none                                                        */
+/******************************************************************************/
+function addAttribute(optValue, optText)
+{
+   newEle = document.createElement("option") ;
+   newEle.value = optValue;
+   newEle.text = optText;
+   availableList.options [index] = newEle;
+
+   //housekeeping.
+   selectNone(availableList);
+   setSize(availableList);
+}
+
+/******************************************************************************/
+/* Function Name: disableField(currField)                                     */
+/* Description  : disables or enables the current field by toggling with      */
+/*                it's read-only version.                                     */
+/* Called by	: various                                                     */        
+/* Parameters   : currField - the field to disable                            */
+/*                bDisable - true = disable, false = enable                   */
+/* Return Value : none                                                        */  
+/******************************************************************************/
+function disableField(currField, bDisable)
+{
+    if (bDisable)         //display the read-only version
+    {
+        document.getElementById("ContentForm:"+currField).style.display="none";
+        document.getElementById("ContentForm:"+currField+"ReadOnly").style.display="block";
+    }
+    else                //display the editable version
+    {
+        document.getElementById("ContentForm:"+currField).style.display="block";
+        document.getElementById("ContentForm:"+currField+"ReadOnly").style.display="none";
+    }
+}
+
+/******************************************************************************/
+/* Function Name: clearAndDisable()                                           */
+/* Description  : clears and disables certain form fields.                    */
+/* Called by	: various						      */
+/* Parameters   : fieldName - the name of the field triggering the action.    */
+/* Return Value : none                                                        */  
+/******************************************************************************/
+function clearAndDisable(fieldName) 
+{
+    if (fieldName == "Region")
+    {
+        document.getElementById("ContentForm:TheNumber").value = "";
+        disableField("TheNumber",true);
+    }
+}
+
+/******************************************************************************/
+/* Function Name: checkReqFields()                                            */
+/* Description  : Enable submit button when these fields are populated:       */
+/* Called by	: various			                              */        
+/* Parameters   : None                                                        */
+/* Return Value : boolean                                                     */  
+/******************************************************************************/
+function checkReqFields()
+{
+
+    var sType = document.getElementById("ContentForm:sType").value.toUpperCase();
+    var sTitle = document.getElementById("ContentForm:sTitle").value.toUpperCase();
+    
+        if  (((isBlank(document.getElementById("ContentForm:FieldValueToCheck").value)))
+
+        {
+        	disableSubmit();
+        }
+    	else
+    	{
+        	enableSubmit();
+    	}
+
+    return true;
+}
+
+//-->
