@@ -1,5 +1,5 @@
 # My Portfolio
-The portfolio of my Projecct Management artifacts and code samples. Feel free to use
+This is my portfolio of Project Management artifacts and code samples. Feel free to use
 any of these in your project(s) as needed. 
 
 The files in the root are my Project Management artifacts and recommendations on my 
