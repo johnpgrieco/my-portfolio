@@ -1,0 +1,34 @@
+function appendDateStamp() {
+  
+  // Append the date stamp to every file in the Drive.
+  // Toggle the first two lines based on test or production 
+  // TEST: var files = DriveApp.getFilesByName('THE TEST FILE TO MANIPULATE');
+  // PRODUCTION, GET ALL THE FILES IN THE DRIVE: var files = DriveApp.getFiles(); 
+
+  // Steps to deploy this: 
+  // 1. Unit test: run it on a local drive. 
+  // 2. Back up the entire production drive. This will likely change the datestamp
+  //    in the event of a need for rollback, but protects from data loss. 
+  // 3. QA: Run this on the test folder/files in production. 
+  // 4. Prepare: uncomment the statement var files = DriveApp.getFiles() below
+  // 5. Prepare: comment out the statement var files = DriveApp.getFilesByName below
+  // 6. Prepare: also consider commenting out the audit trail logging to conserve space.  
+  // 7. Save this script to the production environment. Refer to https://developers.google.com/apps-script/guides/projects
+  // 8. Run it on the entire production drive. 
+
+  var files = DriveApp.getFilesByName('Untitled Spreadsheet');
+  //var files = DriveApp.getFiles(); 
+  var fileName = '';
+  while (files.hasNext()) {
+    var file = files.next(); 
+    fileName = file.getName();
+   
+    // Audit trail 
+    Logger.log('The old file name is: ' + fileName);
+
+    file.setName(file.getLastUpdated + '-' + fileName);
+
+    // Audit trail 
+    Logger.log('The new file name is: ' + file.getName());
+  }
+}
