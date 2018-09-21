@@ -4,7 +4,7 @@ any of these in your project(s) as needed.
 
 The files in the root are my Project Management (PM) artifacts (screenshots of the apps I
 worked on as a PM, sample reports and project plans). The exception is Recommendations.png, 
-which is a listing of career recommendations (references), and John_Grieco_Resume, my resume.  
+which is a listing of career recommendations (references), and my resume (John_Grieco_Resume.docx).  
 
 The 'code samples' folder contains the code I created. 
 
