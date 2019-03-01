@@ -1,0 +1,376 @@
+/* eslint-disable  func-names */
+/* eslint-disable  no-console */
+
+const Alexa = require('ask-sdk');
+var persistenceAdapter;
+
+/*
+    Special thanks to German Viscuso for the persistence model:
+    https://gist.github.com/germanviscuso/70c979f671660fea811ccfb63801f936.
+    
+    Ever have trouble finding the TV remote or your phone? Ever entered a rental apartment or home
+    and not know where anything is? Well, this skill seeks to help (though I can't guarantee a 100%
+    success rate, since it's only as good as the input :-) 
+    
+    This will use S3 based persistence to store the location of items around the home for easy retrieval later. 
+    It will use S3 persistence if this is an Alexa-Hosted skill and DynamoDB otherwise. 
+    
+    If you're using Alexa Hosted Skills (Beta) you have to use S3 persistence, DynamoDB isn't supported. 
+    If you want to use the S3 adapter in a self hosted skill you'll have to provide a bucket name (not
+    take it from process.env) and modify the lambda execution role to give proper access to your S3 service. 
+    
+    More info:
+    https://developer.amazon.com/docs/hosted-skills/build-a-skill-end-to-end-using-an-alexa-hosted-skill.html
+    https://ask-sdk-for-nodejs.readthedocs.io/en/latest/Managing-Attributes.html
+
+    Enhancement ideas: 
+    1. If the item isn't found, prompt to buy it and link to voice ordering via Prime. 
+    2. If the item is found in more than one place, list both (or all) places.
+    3. If the item not found is a phone, call the phone to help in locating it. 
+*/
+if(isAlexaHosted()) {
+    const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
+    persistenceAdapter = new S3PersistenceAdapter({ 
+        bucketName: process.env.S3_PERSISTENCE_BUCKET,
+        objectKeyGenerator: keyGenerator
+    });
+} else {
+    // IMPORTANT: don't forget to give DynamoDB access to the role you're to run this lambda (IAM)
+    const {DynamoDbPersistenceAdapter} = require('ask-sdk-dynamodb-persistence-adapter');
+    persistenceAdapter = new DynamoDbPersistenceAdapter({ 
+        tableName: 'global_attr_table',
+        createTable: true,
+        partitionKeyGenerator: keyGenerator
+    });
+}
+
+// This function is an indirect way to detect if this is part of an Alexa-Hosted skill
+function isAlexaHosted() {
+    return process.env.S3_PERSISTENCE_BUCKET ? true : false;
+}
+
+// This function establishes the primary key of the database as the skill id (hence you get global persistence, not per user id)
+function keyGenerator(requestEnvelope) {
+    if (requestEnvelope
+        && requestEnvelope.context
+        && requestEnvelope.context.System
+        && requestEnvelope.context.System.application
+        && requestEnvelope.context.System.application.applicationId) {
+      return requestEnvelope.context.System.application.applicationId; 
+    }
+    throw 'Cannot retrieve app id from request envelope!';
+}
+
+const LaunchRequestHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
+  },
+  handle(handlerInput) {
+    const speechText = 'Welcome to track it! You can assign an object to a current location and I\'ll keep tabs on it for you! To find an object, say get followed by the name of the object, or you can delete object or register pair';
+
+    return handlerInput.responseBuilder
+      .speak(speechText)
+      .reprompt(speechText)
+      .getResponse();
+  },
+};
+
+const GetAttributeIntentHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && handlerInput.requestEnvelope.request.intent.name === 'GetAttributeIntent';
+  },
+  handle(handlerInput) {
+    const {attributesManager} = handlerInput;
+    const request = handlerInput.requestEnvelope.request;
+    const intent = request.intent;
+    
+    const slotValues = getSlotValues(intent.slots);
+    const key = slotValues["object"] ? slotValues["object"].value : null;
+    
+    let speechText;
+    const attributes = attributesManager.getSessionAttributes();
+    if(key && attributes[key]) {
+      const value = attributes[key];
+      speechText = 'The location assigned to ' + key + ' is ' + value + '.';
+    } else {
+      speechText = 'Sorry, there\'s no location assigned to ' + key + ' yet.';
+    }
+    
+    return handlerInput.responseBuilder
+      .speak(speechText + ' You can now continue querying, deleting or registering objects to track')
+      .reprompt('you can say find object, delete object or register pair')
+      .getResponse();
+      
+  }
+}
+
+const SetAttributeIntentHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && handlerInput.requestEnvelope.request.intent.name === 'SetAttributeIntent';
+  },
+  handle(handlerInput) {
+    const {attributesManager} = handlerInput;
+    const request = handlerInput.requestEnvelope.request;
+    const intent = request.intent;
+    const currentIntent = handlerInput.requestEnvelope.request.intent;
+
+    //prevent input of numbers, to guard against storing sensitive data like Social Security numbers...
+    let slots = currentIntent.slots;
+    let badInputSlot;
+    for (let x in slots) {
+        if (slots.hasOwnProperty(x) && slots[x].hasOwnProperty('value')) {
+            if (isNaN(slots[x].value)) {}
+            else {
+                badInputSlot = x;
+                break;
+            }
+        }
+    }
+
+    const slotValues = getSlotValues(intent.slots);
+    //const key = slotValues["key"] ? slotValues["key"].value.padStart(4, '0') : null;
+    const key = slotValues["object"] ? slotValues["object"].value : null;
+    const value = slotValues["value"] ? slotValues["value"].value : null;
+
+    let speechText;
+    //if(key && value && intent.confirmationStatus !== 'DENIED') {
+    if(key && value) {
+      let attributes = attributesManager.getSessionAttributes();
+      attributes[key] =  value;
+      attributesManager.setSessionAttributes(attributes);
+      //speechText = 'Key value pair <say-as interpret-as="digits">' + key + '</say-as> ' + value + ', registered and will be saved on exit.';
+      speechText = 'The location of object ' + key + ' is registered at ' + value;
+    } else {
+      speechText = 'Ok. I won\'t register this pair.';
+    }
+    
+    if (badInputSlot) {
+        return handlerInput.responseBuilder.speak('Please supply only text as input, not numbers.').reprompt('Please respond with text only').addElicitSlotDirective(badInputSlot, currentIntent).getResponse();
+    } else {
+    return handlerInput.responseBuilder
+      .speak(speechText + ' You can now continue querying, deleting or registering objects to track')
+      .reprompt('you can say find object, delete object or register pair')
+      .getResponse();
+    }
+  }
+};
+
+const DeleteAttributeIntentHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && handlerInput.requestEnvelope.request.intent.name === 'DeleteAttributeIntent';
+  },
+  handle(handlerInput) {
+    const {attributesManager} = handlerInput;
+    const request = handlerInput.requestEnvelope.request;
+    const intent = request.intent;
+    
+    const slotValues = getSlotValues(intent.slots);
+    //const key = slotValues["key"] ? slotValues["key"].value.padStart(4, '0') : null;
+    const key = slotValues["object"] ? slotValues["object"].value : null;
+    
+    let speechText;
+    let attributes = attributesManager.getSessionAttributes();
+    if(key && attributes[key] && intent.confirmationStatus !== 'DENIED') {
+      delete attributes[key];
+      attributesManager.setSessionAttributes(attributes);
+      //speechText = 'Key value pair <say-as interpret-as="digits">' + key + '</say-as> has been deleted and the new status will be saved on exit.';
+      speechText = 'Object ' + key + ' has been deleted and the new status will be saved on exit.';
+    } else {
+      if(intent.confirmationStatus === 'DENIED')
+        speechText = 'Ok, let\'s cancel that. You can now continue querying, registering or deleting objects to track';
+      else
+        speechText = 'I can\'t find an a pair for that key. Please try again saying, for example, delete TV remote';
+    }
+    
+    return handlerInput.responseBuilder
+      .speak(speechText + ' You can now continue querying, registering or deleting objects to track')
+      .reprompt('you can say find object, delete object or register pair')
+      .getResponse();
+  }
+}
+
+const HelpIntentHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
+  },
+  handle(handlerInput) {
+    const speechText = 'You can tell me an objects location and I\'ll track it for you! For example you can say register pair, get value or delete object';
+
+    return handlerInput.responseBuilder
+      .speak(speechText)
+      .reprompt(speechText)
+      .getResponse();
+  },
+};
+
+const CancelAndStopIntentHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && (handlerInput.requestEnvelope.request.intent.name === 'AMAZON.CancelIntent'
+        || handlerInput.requestEnvelope.request.intent.name === 'AMAZON.StopIntent');
+  },
+  handle(handlerInput) {
+    const speechText = 'Goodbye!';
+
+    return handlerInput.responseBuilder
+      .speak(speechText)
+      .getResponse();
+  },
+};
+
+const FallbackIntentHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'IntentRequest'
+      && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.FallbackIntent';
+  },
+  handle(handlerInput) {
+    const speechText = 'I don\'t know that! Please try again or say help';
+
+    return handlerInput.responseBuilder
+      .speak(speechText)
+      .getResponse();
+  },
+};
+
+const SessionEndedRequestHandler = {
+  canHandle(handlerInput) {
+    return handlerInput.requestEnvelope.request.type === 'SessionEndedRequest';
+  },
+  handle(handlerInput) {
+    console.log(`Session ended with reason: ${handlerInput.requestEnvelope.request.reason}`);
+
+    return handlerInput.responseBuilder.getResponse();
+  },
+};
+
+const ErrorHandler = {
+  canHandle() {
+    return true; 
+  },
+  handle(handlerInput, error) {
+    console.log(`Error handled: ${error}`);
+
+    return handlerInput.responseBuilder
+      .speak('Sorry,there was an error. Please say again.')
+      .reprompt('Sorry, there was an error. Please say again.')
+      .getResponse();
+  },
+};
+
+// This request interceptor with each new session loads all global persistent attributes
+// into the session attributes and increments a launch counter
+const PersistenceRequestInterceptor = { 
+  process(handlerInput) { 
+      if(handlerInput.requestEnvelope.session['new']) { 
+          return new Promise((resolve, reject) => { 
+              handlerInput.attributesManager.getPersistentAttributes() 
+                  .then((persistentAttributes) => { 
+                      persistentAttributes = persistentAttributes || {};
+                      if(!persistentAttributes['launchCount'])
+                        persistentAttributes['launchCount'] = 0;
+                      persistentAttributes['launchCount'] += 1; 
+                      handlerInput.attributesManager.setSessionAttributes(persistentAttributes); 
+                      resolve();
+                  })
+                  .catch((err) => { 
+                    reject(err); 
+                });
+          }); 
+      } // end session['new'] 
+  } 
+};
+
+// This response interceptor stores all session attributes into global persistent attributes
+// when the session ends and it stores the skill last used timestamp
+const PersistenceResponseInterceptor = { 
+  process(handlerInput, responseOutput) { 
+      const ses = (typeof responseOutput.shouldEndSession === "undefined" ? true : responseOutput.shouldEndSession); 
+      if(ses || handlerInput.requestEnvelope.request.type === 'SessionEndedRequest') { // skill was stopped or timed out 
+          let sessionAttributes = handlerInput.attributesManager.getSessionAttributes(); 
+          sessionAttributes['lastUseTimestamp'] = new Date(handlerInput.requestEnvelope.request.timestamp).getTime(); 
+          handlerInput.attributesManager.setPersistentAttributes(sessionAttributes); 
+          return new Promise((resolve, reject) => { 
+              handlerInput.attributesManager.savePersistentAttributes() 
+                  .then(() => { 
+                      resolve(); 
+                  }) 
+                  .catch((err) => { 
+                      reject(err); 
+                  }); 
+          }); 
+      } 
+  } 
+};
+
+function getSlotValues(filledSlots) {
+  const slotValues = {};
+
+  console.log(`The filled slots: ${JSON.stringify(filledSlots)}`);
+  Object.keys(filledSlots).forEach((item) => {
+    const name = filledSlots[item].name;
+
+    if (filledSlots[item] &&
+      filledSlots[item].resolutions &&
+      filledSlots[item].resolutions.resolutionsPerAuthority[0] &&
+      filledSlots[item].resolutions.resolutionsPerAuthority[0].status &&
+      filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code) {
+      switch (filledSlots[item].resolutions.resolutionsPerAuthority[0].status.code) {
+        case 'ER_SUCCESS_MATCH':
+          slotValues[name] = {
+            synonym: filledSlots[item].value,
+            value: filledSlots[item].resolutions.resolutionsPerAuthority[0].values[0].value.name,
+            id: filledSlots[item].resolutions.resolutionsPerAuthority[0].values[0].value.id,
+            isValidated: true,
+            canUnderstand: true,
+            canFulfill: true,
+          };
+          break;
+        case 'ER_SUCCESS_NO_MATCH':
+          slotValues[name] = {
+            synonym: filledSlots[item].value,
+            value: filledSlots[item].value,
+            id: null,
+            isValidated: false,
+            canUnderstand: false,
+            canFulfill: null,
+          };
+          break;
+        default:
+          break;
+      }
+    } else {
+      slotValues[name] = {
+        synonym: filledSlots[item].value,
+        value: filledSlots[item].value,
+        id: filledSlots[item].id,
+        isValidated: false,
+        canUnderstand: false,
+        canFulfill: false,
+      };
+    }
+  }, this);
+  return slotValues;
+}
+
+const skillBuilder = Alexa.SkillBuilders.custom();
+
+exports.handler = skillBuilder
+  .addRequestHandlers(
+    LaunchRequestHandler,
+    GetAttributeIntentHandler,
+    SetAttributeIntentHandler,
+    DeleteAttributeIntentHandler,
+    HelpIntentHandler,
+    CancelAndStopIntentHandler,
+    FallbackIntentHandler,
+    SessionEndedRequestHandler
+  )
+  .addErrorHandlers(ErrorHandler)
+  .addRequestInterceptors(PersistenceRequestInterceptor)
+  .addResponseInterceptors(PersistenceResponseInterceptor)
+  .withPersistenceAdapter(persistenceAdapter)
+  .lambda();

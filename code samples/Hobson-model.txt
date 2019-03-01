@@ -1,0 +1,330 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "track it",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "SetAttributeIntent",
+                    "slots": [
+                        {
+                            "name": "object",
+                            "type": "AMAZON.SearchQuery",
+                            "samples": [
+                                "it's {object}",
+                                "the key is {object}",
+                                "object {object}",
+                                "okay {object}",
+                                "all right {object}",
+                                "{object}"
+                            ]
+                        },
+                        {
+                            "name": "value",
+                            "type": "AMAZON.SearchQuery",
+                            "samples": [
+                                "it's {value}",
+                                "the location {value}",
+                                "all right {value}",
+                                "okay {value}",
+                                "{value}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "register pair",
+                        "set value {value}",
+                        "value {value}",
+                        "set key {object}",
+                        "set a pair",
+                        "set a value"
+                    ]
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "GetAttributeIntent",
+                    "slots": [
+                        {
+                            "name": "object",
+                            "type": "AMAZON.SearchQuery",
+                            "samples": [
+                                "it's {object}",
+                                "the key is {object}",
+                                "object {object}",
+                                "okay {object}",
+                                "all right {object}",
+                                "{object}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "find a value",
+                        "get a value",
+                        "fetch a value",
+                        "tell me a value",
+                        "give me a value",
+                        "fetch value",
+                        "find value",
+                        "get value",
+                        "query {object}",
+                        "find {object}",
+                        "give me {object}",
+                        "code {object}",
+                        "key {object}",
+                        "fetch {object}",
+                        "get {object}"
+                    ]
+                },
+                {
+                    "name": "AMAZON.FallbackIntent",
+                    "samples": []
+                },
+                {
+                    "name": "DeleteAttributeIntent",
+                    "slots": [
+                        {
+                            "name": "object",
+                            "type": "AMAZON.SearchQuery",
+                            "samples": [
+                                "object {object}",
+                                "the object is {object}",
+                                "the object name is {object}",
+                                "{object}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "remove a value",
+                        "delete a value",
+                        "eliminate a value",
+                        "discard a value",
+                        "remove value",
+                        "delete value",
+                        "eliminate value",
+                        "discard value",
+                        "remove an object",
+                        "delete an object",
+                        "eliminate an object",
+                        "discard an object",
+                        "remove object",
+                        "delete object",
+                        "eliminate object",
+                        "discard object",
+                        "remove a pair",
+                        "delete a pair",
+                        "eliminate a pair",
+                        "discard a pair",
+                        "remove pair",
+                        "delete pair",
+                        "eliminate pair",
+                        "discard pair",
+                        "remove {object}",
+                        "delete {object}",
+                        "eliminate {object}",
+                        "discard {object}",
+                        "remove object {object}",
+                        "delete object {object}",
+                        "eliminate object {object}",
+                        "discard object {object}",
+                        "remove the object {object}",
+                        "delete the object {object}",
+                        "eliminate the object {object}",
+                        "discard the object {object}"
+                    ]
+                }
+            ],
+            "types": []
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "SetAttributeIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "object",
+                            "type": "AMAZON.SearchQuery",
+                            "confirmationRequired": true,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "confirmation": "Confirm.Slot.22881561416.103485729333",
+                                "elicitation": "Elicit.Slot.22881561416.1546464456715"
+                            }
+                        },
+                        {
+                            "name": "value",
+                            "type": "AMAZON.SearchQuery",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.22881561416.103485729333"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GetAttributeIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "object",
+                            "type": "AMAZON.SearchQuery",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.554346980114.1513789155758"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "DeleteAttributeIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "object",
+                            "type": "AMAZON.SearchQuery",
+                            "confirmationRequired": true,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "confirmation": "Confirm.Slot.814228627186.471212978356",
+                                "elicitation": "Elicit.Slot.814228627186.471212978356"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "delegationStrategy": "ALWAYS"
+        },
+        "prompts": [
+            {
+                "id": "Elicit.Slot.22881561416.1546464456715",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Value set as {value} . Now please tell me the name of the object. It will be used as the key"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Please tell me a name for the object which I will use as the key for it's location"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.22881561416.103485729333",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Are you sure you want to store object {object} ? Please do not store sensitive information such as Social Security numbers!"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.22881561416.103485729333",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Object set as {object} . Now please tell me a location."
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Please tell me a location which I will use as value for the pair"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.22881561416",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "The object {object} will be assigned the location {value} . Please note it is strongly advised not to store personally identifiable information like social security numbers. Do you confirm?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Ok. I will assign the location {value} to the object {object} . Please note it is strongly advised not to store personally identifiable information like social security numbers. Is that all right?"
+                    }
+                ]
+            },
+            {
+                "id": "Slot.Validation.461573702210.890266783786.745888534020",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please say the location"
+                    }
+                ]
+            },
+            {
+                "id": "Slot.Validation.461573702210.890266783786.128131521422",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please say the location of the object"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.554346980114.1513789155758",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please tell me the object and I will tell you the assigned location"
+                    }
+                ]
+            },
+            {
+                "id": "Slot.Validation.554346980114.1513789155758.784106537043",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please say a location of fhe object"
+                    }
+                ]
+            },
+            {
+                "id": "Slot.Validation.554346980114.1513789155758.1548591292593",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please say a location of the object"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.814228627186.471212978356",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Okey. Please tell me the name of the object you want to remove"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.814228627186.471212978356",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Are you sure you want to eliminate item {object} ?"
+                    }
+                ]
+            }
+        ]
+    }
+}
