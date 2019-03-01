@@ -3,6 +3,7 @@
 
 const Alexa = require('ask-sdk');
 var persistenceAdapter;
+const repromptText = 'you can say find or delete, followed by the object name, or register pair';
 
 /*
     Special thanks to German Viscuso for the persistence model:
@@ -66,7 +67,7 @@ const LaunchRequestHandler = {
     return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
   },
   handle(handlerInput) {
-    const speechText = 'Welcome to track it! You can assign an object to a current location and I\'ll keep tabs on it for you! To find an object, say get followed by the name of the object, or you can delete object or register pair';
+    const speechText = 'Welcome to track it! You can assign an object to a current location and I\'ll keep tabs on it for you! To find an object, say get followed by the name of the object. To remove an object, say delete followed by the name of the object. To add an object, say register pair';
 
     return handlerInput.responseBuilder
       .speak(speechText)
@@ -98,8 +99,8 @@ const GetAttributeIntentHandler = {
     }
     
     return handlerInput.responseBuilder
-      .speak(speechText + ' You can now continue querying, deleting or registering objects to track')
-      .reprompt('you can say find object, delete object or register pair')
+      .speak(speechText + ' You can now continue querying, deleting or registering objects to track. ' + repromptText)
+      .reprompt(repromptText)
       .getResponse();
       
   }
@@ -130,28 +131,27 @@ const SetAttributeIntentHandler = {
     }
 
     const slotValues = getSlotValues(intent.slots);
-    //const key = slotValues["key"] ? slotValues["key"].value.padStart(4, '0') : null;
     const key = slotValues["object"] ? slotValues["object"].value : null;
     const value = slotValues["value"] ? slotValues["value"].value : null;
 
     let speechText;
-    //if(key && value && intent.confirmationStatus !== 'DENIED') {
+    
     if(key && value) {
       let attributes = attributesManager.getSessionAttributes();
       attributes[key] =  value;
       attributesManager.setSessionAttributes(attributes);
       //speechText = 'Key value pair <say-as interpret-as="digits">' + key + '</say-as> ' + value + ', registered and will be saved on exit.';
-      speechText = 'The location of object ' + key + ' is registered at ' + value;
+      speechText = 'The location of object ' + key + ' is registered at ' + value + '. ';
     } else {
-      speechText = 'Ok. I won\'t register this pair.';
+      speechText = 'Ok. I won\'t register this object.';
     }
     
     if (badInputSlot) {
         return handlerInput.responseBuilder.speak('Please supply only text as input, not numbers.').reprompt('Please respond with text only').addElicitSlotDirective(badInputSlot, currentIntent).getResponse();
     } else {
     return handlerInput.responseBuilder
-      .speak(speechText + ' You can now continue querying, deleting or registering objects to track')
-      .reprompt('you can say find object, delete object or register pair')
+      .speak(speechText + ' You can now continue querying, deleting or registering objects to track. ' + repromptText)
+      .reprompt(repromptText)
       .getResponse();
     }
   }
@@ -182,12 +182,12 @@ const DeleteAttributeIntentHandler = {
       if(intent.confirmationStatus === 'DENIED')
         speechText = 'Ok, let\'s cancel that. You can now continue querying, registering or deleting objects to track';
       else
-        speechText = 'I can\'t find an a pair for that key. Please try again saying, for example, delete TV remote';
+        speechText = 'I can\'t find ' + key + '. Please try again saying, for example, delete TV remote.';
     }
     
     return handlerInput.responseBuilder
-      .speak(speechText + ' You can now continue querying, registering or deleting objects to track')
-      .reprompt('you can say find object, delete object or register pair')
+      .speak(speechText + ' You can now continue querying, registering or deleting objects to track. ' + repromptText)
+      .reprompt(repromptText)
       .getResponse();
   }
 }
@@ -198,7 +198,7 @@ const HelpIntentHandler = {
       && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
   },
   handle(handlerInput) {
-    const speechText = 'You can tell me an objects location and I\'ll track it for you! For example you can say register pair, get value or delete object';
+    const speechText = 'You can tell me an objects location and I\'ll track it for you! For example you can say register pair and follow the prompts, or say get or delete, followed by the object name';
 
     return handlerInput.responseBuilder
       .speak(speechText)
